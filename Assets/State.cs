@@ -28,7 +28,7 @@ public class State
     float visDist = 10.0f; // When the player is within a distance of 10 from the NPC, then the NPC should be able to see it...
     float visAngle = 30.0f; // ...if the player is within 30 degrees of the line of sight.
     float shootDist = 7.0f; // When the player is within a distance of 7 from the NPC, then the NPC can go into an ATTACK state.
-    float sneakdistance = 1.5f;
+    float sneakdistance = 1.25f;
     // Constructor for State
     public State(GameObject _npc, NavMeshAgent _agent, Animator _anim, Transform _player)
     {
@@ -322,7 +322,7 @@ public class Attack : State
 
 
 public class Sleep : State
-{
+{ 
     AudioSource sound;
     public bool active;
     public Sleep(GameObject _npc, NavMeshAgent _agent, Animator _anim, Transform _player)
@@ -338,24 +338,20 @@ public class Sleep : State
     {
         anim.SetTrigger("isIdle");
         anim.SetTrigger("isSleeping");
+        
         agent.isStopped = true;
+        
         base.Enter();
 
     }
-    public override void Update()
-    {
-        if (active == false)
-        {
-            FunctionTimer.Create(() => stage = EVENT.EXIT, 10f);
-
-            active = true;
-        }
-        base.Update();
+    public override void Update() {
+        npc.tag = "Untagged";
+        npc.transform.LookAt(player) ;
     }
 
     public override void Exit()
     {
-        npc.SetActive(false);
+        anim.ResetTrigger("isSleeping");
         base.Exit();
     }
 }

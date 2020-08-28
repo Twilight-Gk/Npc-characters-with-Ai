@@ -59,7 +59,24 @@ public class NpcState
     }
     public GameObject[] Knockout;
     public GameObject enem;
+    public GameObject enem2;
     
+    public GameObject GetSafe(GameObject enemy)
+    {
+        float lastdist = Mathf.Infinity;
+        GameObject lastret = GameObject.FindGameObjectWithTag("Safe");
+        GameObject[] safebox = GameObject.FindGameObjectsWithTag("Safe");
+        foreach(GameObject safe in safebox)
+        {
+            float dist = Vector3.Distance(safe.transform.position, enemy.transform.position);
+            if (dist < lastdist)
+            {
+                lastdist = dist;
+                lastret = safe;
+            }
+        }
+        return lastret;
+    }
     public bool CanBeseen()
     {
         GameObject[] enemies = GameObject.FindGameObjectsWithTag("Npc");
@@ -89,7 +106,7 @@ public class NpcState
                 
                 lastdist = dist;
                 enem = var;
-            }
+            }     
         }
         if (lastdist == Mathf.Infinity)
         {
@@ -111,7 +128,7 @@ public class NpcState
     }
 }
 
-// Constructor for Idle state.
+
 public class NpcIdle : NpcState
 {
   
@@ -119,34 +136,46 @@ public class NpcIdle : NpcState
                 : base(_npc, _agent, _anim)
     {
         name = STATE.IDLE;// Set name of current state.
+        agent.isStopped = true;
+        
     }
 
     public override void Enter()
     {
-        
+        anim.SetTrigger("isIdle");
         Debug.Log("State Idle");
+       
         base.Enter();
     }
     public override void Update()
     {
-        /*if (EnemyCount())
+        if (EnemyCount() && !CanBeseen())
         {
             nextState = new NpcScout(npc, agent, anim);
             stage = EVENT.EXIT;
-        } */
-        agent.SetDestination(GameObject.FindGameObjectWithTag("Player").transform.position);
-        agent.speed = 7f;
-        agent.stoppingDistance = 2f;
+        } 
+   
         if (CanBeseen())
         {
-            Debug.Log("Can be seen");
+            nextState = new NpcHide(npc, agent, anim);
+            stage = EVENT.EXIT;
         }
+
+        if (!EnemyCount())
+        {
+            base.Update();
+        }
+       /* else // used while debugging code to trigger states 
+        {
+            agent.SetDestination(GameObject.FindGameObjectWithTag("Player").transform.position);
+            agent.speed = 5f;
+        }*/
 
     }
 
     public override void Exit()
     {
-        
+        anim.ResetTrigger("isIdle");
         base.Exit();
     }
 }
@@ -155,16 +184,21 @@ public class NpcScout : NpcState
 {
     GameObject target;
     float distance;
+    
     public NpcScout(GameObject _npc, NavMeshAgent _agent, Animator _anim)
                 : base(_npc, _agent, _anim)
     {
         name = STATE.SCOUT;
-        agent.speed = 7f;
+        agent.speed = 5.5f;
+        
     }
 
     public override void Enter()
     {
-        Debug.Log("State Scout");
+        Debug.Log("State Scout" );
+      
+        agent.isStopped = false;
+        anim.SetTrigger("isRunning");
         Enemy();
         target = GetTarget();
         if(target == null)
@@ -172,7 +206,9 @@ public class NpcScout : NpcState
             nextState = new NpcIdle(npc, agent, anim);
             stage = EVENT.EXIT;
         }
-        anim.SetTrigger("isRunning");
+        npc.transform.LookAt(target.transform.position);
+        
+        agent.isStopped = false;
         base.Enter();
     }
 
@@ -184,12 +220,17 @@ public class NpcScout : NpcState
         {
             anim.SetTrigger("isWalking");
             agent.speed = 3f;
-            anim.speed = 0.8f;
+            
         }
         
         if(distance < 1.25f)
         {
             nextState = new NpcKill(npc, agent, anim);
+            stage = EVENT.EXIT;
+        }
+        if (CanBeseen())
+        {
+            nextState = new NpcHide(npc, agent, anim);
             stage = EVENT.EXIT;
         }
     }
@@ -203,57 +244,57 @@ public class NpcScout : NpcState
     }
 }
 
-public class NpcApproach : NpcState
-{
-    public NpcApproach(GameObject _npc, NavMeshAgent _agent, Animator _anim)
-                : base(_npc, _agent, _anim)
-    {
-        name = STATE.APPROACH;
-        
-        
-    }
 
-    public override void Enter()
-    {
-       
-        
-    }
-    public override void Update()
-    {
-       
-    }
-    public override void Exit()
-    {
-       
-        base.Exit();
-    }
-}
 
 public class NpcHide : NpcState
 {
     
+    bool activated = true;
+    GameObject pursuer;
     public NpcHide(GameObject _npc, NavMeshAgent _agent, Animator _anim)
                 : base(_npc, _agent, _anim)
     {
-
+        agent.speed = 7f;
         name = STATE.HIDE;
+        
     }
 
     public override void Enter()
     {
+        Debug.Log("State Hide");
        
-        
+        agent.isStopped = false;
+        anim.SetTrigger("isRunning");
         base.Enter();
     }
 
     public override void Update()
     {
-        
-        base.Update();
+        Enemy();
+        pursuer = GetTarget();
+        Vector3 direction = (npc.transform.position - pursuer.transform.position).normalized;
+        if (Vector3.Distance(npc.transform.position, pursuer.transform.position) < 20)
+        {
+            agent.SetDestination(direction + agent.transform.position);
+        }
+        if (Vector3.Distance(npc.transform.position, pursuer.transform.position) >= 20 && activated)
+        {
+            Vector3 relativePos = pursuer.transform.position - npc.transform.position;
+            Quaternion rotation = Quaternion.LookRotation(relativePos, Vector3.up);
+            npc.transform.rotation = rotation;
+            anim.SetTrigger("isIdle");
+            anim.ResetTrigger("isRunning");
+            agent.isStopped = true;
+            FunctionTimer.Create(() => nextState = new NpcKill(npc, agent, anim), 3.5f);
+            FunctionTimer.Create(() => stage = EVENT.EXIT, 3.5f);
+            activated = false;
+        }
     }
 
     public override void Exit()
     {
+        anim.ResetTrigger("isIdle");
+        anim.ResetTrigger("isRunning");
         base.Exit();
         
     }
@@ -261,7 +302,7 @@ public class NpcHide : NpcState
 
 public class NpcKill : NpcState
 {
-  
+    
     public NpcKill(GameObject _npc, NavMeshAgent _agent, Animator _anim)
                 : base(_npc, _agent, _anim)
     {
@@ -270,19 +311,23 @@ public class NpcKill : NpcState
 
     public override void Enter()
     {
-        Debug.Log("Kill");
+        Debug.Log("Kill" );
+        
         anim.SetTrigger("UpperCut");
         base.Enter();
-        FunctionTimer.Create(() => nextState = new NpcIdle(npc, agent, anim), 3f);
-        FunctionTimer.Create(() => stage = EVENT.EXIT, 3f);
+     
+        FunctionTimer.Create(() => nextState = new NpcApproach(npc, agent, anim), 4f);
+        FunctionTimer.Create(() => stage = EVENT.EXIT, 4f);
 
     }
 
     public override void Update()
     {
-
-
-      
+        if (CanBeseen())
+        {
+            nextState = new NpcHide(npc, agent, anim);
+            stage = EVENT.EXIT;
+        }
     }
 
     public override void Exit()
@@ -291,4 +336,79 @@ public class NpcKill : NpcState
         base.Exit();
     }
 }
+ 
+public class NpcApproach : NpcState
+{
+    bool look = true;
+    bool activated = true;
+    GameObject safe;
+    GameObject target;
+   
+    public NpcApproach(GameObject _npc, NavMeshAgent _agent, Animator _anim)
+               : base(_npc, _agent, _anim)
+    {
+        name = STATE.APPROACH;
+        agent.isStopped = false;
+    }
 
+    public override void Enter()
+    {
+        Debug.Log("Approach" );
+        anim.SetTrigger("isRunning");
+        agent.speed = 4f;
+        Enemy();
+        target = GetTarget();
+        if (target == null)
+        {
+          
+            if (agent.remainingDistance < 2f)
+            {
+                Debug.Log("Game Finished");
+                safe = GameObject.FindGameObjectWithTag("Finish");
+                look = false;
+            }
+        }
+        else
+        {
+            
+            safe = GetSafe(target);
+        }
+        base.Enter();
+    }
+
+    public override void Update()
+    {
+        if (CanBeseen())
+        {
+            nextState = new NpcHide(npc, agent, anim);
+            stage = EVENT.EXIT;
+        }
+        agent.SetDestination(safe.transform.position);
+        if (agent.remainingDistance <= agent.stoppingDistance)
+        {
+            anim.SetTrigger("isIdle");
+            agent.isStopped = true;
+            if(look)
+                npc.transform.LookAt(target.transform.position);
+            if (activated)
+            {
+                FunctionTimer.Create(() => nextState = new NpcScout(npc, agent, anim), 5f);
+                FunctionTimer.Create(() => stage = EVENT.EXIT, 5f);
+                activated = false;
+            }
+            else
+            {
+                base.Update();
+            }
+        }
+
+    }
+
+    public override void Exit()
+    {
+        anim.speed = 1f;
+        anim.ResetTrigger("isIdle");
+        anim.SetTrigger("isRunning");
+        base.Exit();
+    }
+}

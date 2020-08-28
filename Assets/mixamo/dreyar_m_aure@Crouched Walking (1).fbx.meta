@@ -1,10 +1,13 @@
 fileFormatVersion: 2
-guid: 22ceb1a71f04e3642939c2b1a647d7ab
+guid: d8bc1d87fbcd4254aa4a8c37905d0786
 ModelImporter:
   serializedVersion: 26
   internalIDToNameTable:
   - first:
       74: -203655887218126122
+    second: Crouched Walking (1)
+  - first:
+      74: -5456700939692710608
     second: Crouched Walking
   externalObjects: {}
   materials:
@@ -48,10 +51,10 @@ ModelImporter:
       hasAdditiveReferencePose: 0
       loopTime: 1
       loopBlend: 0
-      loopBlendOrientation: 1
-      loopBlendPositionY: 1
+      loopBlendOrientation: 0
+      loopBlendPositionY: 0
       loopBlendPositionXZ: 0
-      keepOriginalOrientation: 0
+      keepOriginalOrientation: 1
       keepOriginalPositionY: 1
       keepOriginalPositionXZ: 0
       heightFromFeet: 0
@@ -522,13 +525,13 @@ ModelImporter:
         length: 0
         modified: 0
     skeleton:
-    - name: dreyar_m_aure@Crouched Walking(Clone)
+    - name: dreyar_m_aure@Crouched Walking (1)(Clone)
       parentName: 
       position: {x: 0, y: 0, z: 0}
       rotation: {x: 0, y: 0, z: 0, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: mixamorig:Hips
-      parentName: dreyar_m_aure@Crouched Walking(Clone)
+      parentName: dreyar_m_aure@Crouched Walking (1)(Clone)
       position: {x: 0.015989542, y: 8.980693, z: -0.19150883}
       rotation: {x: -0.09697248, y: -0.047420308, z: -0.010088433, w: 0.99410564}
       scale: {x: 1, y: 1, z: 1}

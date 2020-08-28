@@ -95,6 +95,7 @@ public class State
 // Constructor for Idle state.
 public class Idle : State
 {
+    
     public Idle(GameObject _npc, NavMeshAgent _agent, Animator _anim, Transform _player)
                 : base(_npc, _agent, _anim, _player)
     {
@@ -337,16 +338,16 @@ public class Sleep : State
     public override void Enter()
     {
         anim.SetTrigger("isIdle");
-        anim.SetTrigger("isSleeping");
+       
         
         agent.isStopped = true;
-        
+        npc.transform.LookAt(player);
         base.Enter();
 
     }
     public override void Update() {
         npc.tag = "Untagged";
-        npc.transform.LookAt(player) ;
+       
     }
 
     public override void Exit()
